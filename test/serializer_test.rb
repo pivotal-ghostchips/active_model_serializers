@@ -445,7 +445,7 @@ class SerializerTest < ActiveModel::TestCase
 
   def test_associations_with_as
     posts = [
-      Post.new(:title => 'First Post', :body => 'text'), 
+      Post.new(:title => 'First Post', :body => 'text'),
       Post.new(:title => 'Second Post', :body => 'text')
     ]
     user = User.new
@@ -463,15 +463,15 @@ class SerializerTest < ActiveModel::TestCase
           {:title => 'Second Post', :body => 'text', :comments => []}
         ],
         :user => {
-          :first_name => "Jose", 
-          :last_name => "Valim", :ok => true, 
+          :first_name => "Jose",
+          :last_name => "Valim", :ok => true,
           :scope => true
         }
       }
     }, serializer.as_json)
   end
 
-  def test_implicity_detection_for_association_serializers 
+  def test_implicity_detection_for_association_serializers
     implicit_serializer = Class.new(ActiveModel::Serializer) do
       root :custom_blog
       const_set(:UserSerializer, UserSerializer)
@@ -482,7 +482,7 @@ class SerializerTest < ActiveModel::TestCase
     end
 
     posts = [
-      Post.new(:title => 'First Post', :body => 'text', :comments => []), 
+      Post.new(:title => 'First Post', :body => 'text', :comments => []),
       Post.new(:title => 'Second Post', :body => 'text', :comments => [])
     ]
     user = User.new
@@ -500,8 +500,8 @@ class SerializerTest < ActiveModel::TestCase
           {:title => 'Second Post', :body => 'text', :comments => []}
         ],
         :user => {
-          :first_name => "Jose", 
-          :last_name => "Valim", :ok => true, 
+          :first_name => "Jose",
+          :last_name => "Valim", :ok => true,
           :scope => true
         }
       }
@@ -739,7 +739,7 @@ class SerializerTest < ActiveModel::TestCase
     expected = serializer_class.new(post).as_json
     assert_equal expected, hash_object
   end
-  
+
   def test_embed_ids_include_true_with_root
     serializer_class = post_serializer
 
@@ -788,7 +788,7 @@ class SerializerTest < ActiveModel::TestCase
     :author => [{ :first_name => "Jose", :last_name => "Valim" }]
     }, serializer.as_json)
   end
-  
+
   # the point of this test is to illustrate that deeply nested serializers
   # still side-load at the root.
   def test_embed_with_include_inserts_at_root
@@ -1000,7 +1000,7 @@ class SerializerTest < ActiveModel::TestCase
     actual = attachment_serializer.new(attachment, {}).as_json
 
     assert_equal({
-      :name => 'logo.png', 
+      :name => 'logo.png',
       :url => 'http://example.com/logo.png',
       :attachable => {
         :email => { :subject => 'foo', :body => 'bar' }
@@ -1036,7 +1036,7 @@ class SerializerTest < ActiveModel::TestCase
     actual = attachment_serializer.new(attachment, {}).as_json
 
     assert_equal({
-      :name => 'logo.png', 
+      :name => 'logo.png',
       :url => 'http://example.com/logo.png',
       :attachable => {
         :email => 1
@@ -1074,7 +1074,7 @@ class SerializerTest < ActiveModel::TestCase
 
     assert_equal({
       :attachment => {
-        :name => 'logo.png', 
+        :name => 'logo.png',
         :url => 'http://example.com/logo.png',
         :attachable => {
           :email => 1
@@ -1167,6 +1167,48 @@ class SerializerTest < ActiveModel::TestCase
         :readable => { :email => 1 },
         :edible => { :orange => 1 }
       }
+    }, actual)
+  end
+
+  def test_paginatable_array_serialization
+    tag_serializer = Class.new(ActiveModel::Serializer) do
+      attributes :name
+    end
+
+    tag_class = Class.new(Model) do
+      def name
+        @attributes[:name]
+      end
+
+      define_method :active_model_serializer do
+        tag_serializer
+      end
+    end
+
+    serializable_array = Class.new(Array) do
+      def num_pages
+        10
+      end
+
+      def current_page
+        5
+      end
+    end
+
+    array = serializable_array.new
+    array << tag_class.new(:name => 'Rails')
+    array << tag_class.new(:name => 'Sinatra')
+
+    actual = array.active_model_serializer.new(array, :root => :tags).as_json
+
+    assert_equal({
+      :meta => {
+        :pagination => { :total => 10, :current => 5 },
+      },
+      :tags => [
+        { :name => "Rails" },
+        { :name => "Sinatra" },
+      ]
     }, actual)
   end
 end
